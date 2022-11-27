@@ -30,9 +30,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  * */
-#include <GLFW/glfw3.h>
 
 #include <ImApp/imapp.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -42,9 +42,11 @@
 #include <vector>
 
 #include "fa6.cpp"
+#include "roboto.cpp"
+
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
-#include "roboto.cpp"
+#include <GLFW/glfw3.h>
 
 #define STBI_NO_BMP
 #define STBI_NO_PSD
