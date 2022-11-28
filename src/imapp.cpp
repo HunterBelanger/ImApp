@@ -182,9 +182,18 @@ App::App(int w, int h, const char* name)
   // Setup style
   this->set_default_style();
 
+  // We enable docking and viewports here temporarily, so the functionality
+  // loaded in ImGui_ImplGlfw_InitForOpenGL.
+  io_->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  io_->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
   // Setup Platform/Renderer backends
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
+
+  // We can now disable docking and viewports by default here
+  io_->ConfigFlags &= ~(ImGuiConfigFlags_DockingEnable);
+  io_->ConfigFlags &= ~(ImGuiConfigFlags_ViewportsEnable);
 }
 
 App::~App() {
