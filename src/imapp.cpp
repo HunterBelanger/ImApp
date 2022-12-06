@@ -31,8 +31,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * */
 
-#include <ImApp/imapp.hpp>
+#include <GLFW/glfw3.h>
 
+#include <ImApp/imapp.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -42,11 +43,9 @@
 #include <vector>
 
 #include "fa6.cpp"
-#include "roboto.cpp"
-
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
-#include <GLFW/glfw3.h>
+#include "roboto.cpp"
 
 #define STBI_NO_BMP
 #define STBI_NO_PSD
@@ -428,8 +427,9 @@ Image Image::from_file(const std::filesystem::path& fname) {
   }
 
   // Get image data since file exists
+  const std::string fname_str = fname.string();
   unsigned char* data =
-      stbi_load(fname.c_str(), &img_width, &img_height, NULL, 4);
+      stbi_load(fname_str.data(), &img_width, &img_height, NULL, 4);
 
   if (data == NULL) {
     // Loading failed. Throw exception.
@@ -463,7 +463,9 @@ bool Image::save_png(const std::filesystem::path& fname) {
   const int width = static_cast<int>(this->width());
   const int height = static_cast<int>(this->height());
   const int stride = 4 * width;
-  const int err = stbi_write_png(fname.c_str(), width, height, 4, data, stride);
+  const std::string fname_str = fname.string();
+  const int err =
+      stbi_write_png(fname_str.data(), width, height, 4, data, stride);
   return err != 0;
 }
 
@@ -471,7 +473,8 @@ bool Image::save_jpg(const std::filesystem::path& fname) {
   const unsigned char* data = reinterpret_cast<unsigned char*>(image_.data());
   const int width = static_cast<int>(this->width());
   const int height = static_cast<int>(this->height());
-  const int err = stbi_write_jpg(fname.c_str(), width, height, 4, data, 100);
+  const std::string fname_str = fname.string();
+  const int err = stbi_write_jpg(fname_str.data(), width, height, 4, data, 100);
   return err != 0;
 }
 
