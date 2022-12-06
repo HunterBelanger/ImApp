@@ -104,7 +104,11 @@ static const ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 namespace ImApp {
 
 App::App(int w, int h, const char* name)
-    : window(nullptr), io_(nullptr), style_(nullptr), layers_() {
+    : window(nullptr),
+      io_(nullptr),
+      style_(nullptr),
+      layers_(),
+      dpi_scale_(1.0f) {
   // Setup window
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) std::exit(1);
@@ -138,6 +142,9 @@ App::App(int w, int h, const char* name)
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);  // Enable vsync
 
+  // Now we should be able to get the DPI scale
+  this->update_dpi_scale();
+
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -153,8 +160,9 @@ App::App(int w, int h, const char* name)
   constexpr float ICON_FONT_SIZE = 16.;
 
   // Load Roboto font
-  io_->Fonts->AddFontFromMemoryCompressedTTF(
-      RobotoRegular_compressed_data, RobotoRegular_compressed_size, FONT_SIZE);
+  io_->Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data,
+                                             RobotoRegular_compressed_size,
+                                             FONT_SIZE * dpi_scale_);
 
   // Merge icons from FontAwesome Solid
   static const ImWchar fa_icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
@@ -175,8 +183,8 @@ App::App(int w, int h, const char* name)
   fab_icons_config.GlyphMinAdvanceX =
       ICON_FONT_SIZE;  // Make the icon monospaced
   io_->Fonts->AddFontFromMemoryCompressedTTF(
-      FABrands_compressed_data, FABrands_compressed_size, ICON_FONT_SIZE,
-      &fab_icons_config, fab_icons_ranges);
+      FABrands_compressed_data, FABrands_compressed_size,
+      ICON_FONT_SIZE * dpi_scale_, &fab_icons_config, fab_icons_ranges);
 
   // Setup style
   this->set_default_style();
@@ -207,6 +215,19 @@ App::~App() {
 
   glfwDestroyWindow(window);
   glfwTerminate();
+}
+
+void App::update_dpi_scale() {
+  auto monitor = glfwGetWindowMonitor(window);
+  if (!monitor) monitor = glfwGetPrimaryMonitor();
+
+  if (monitor) {
+    float x, y;
+    glfwGetMonitorContentScale(monitor, &x, &y);
+    dpi_scale_ = x;
+  } else {
+    dpi_scale_ = 1.;
+  }
 }
 
 void App::run() {
@@ -281,7 +302,7 @@ void App::set_default_style() {
   style_->DisabledAlpha = 0.6000000238418579;
   style_->WindowPadding = ImVec2(8.0, 8.0);
   style_->WindowRounding = 0.0;
-  style_->WindowBorderSize = 1.0;
+  style_->WindowBorderSize = 1.0 * dpi_scale_;
   style_->WindowMinSize = ImVec2(32.0, 32.0);
   style_->WindowTitleAlign = ImVec2(0.0, 0.5);
   style_->WindowMenuButtonPosition = ImGuiDir_Left;

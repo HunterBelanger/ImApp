@@ -288,11 +288,15 @@ class Image {
   Image() : height_(0), width_(0), image_(), ogl_texture_id_(std::nullopt) {}
 };
 
+// Forward declare ImApp::App class to store pointer in Layer.
+class App;
+
 /**
  * @breif Abstract class for the interface of a rendering layer.
  */
 class Layer {
  public:
+  Layer() : app_(nullptr) {}
   virtual ~Layer() = default;
 
   /**
@@ -311,6 +315,20 @@ class Layer {
    * when the App is destroyed, or is closed.
    */
   virtual void on_kill(){};
+
+  /**
+   * @brief Returns a pointer to the associated ImApp::App instance. This
+   * pointer will only be set and valid if the layer has been pushed onto
+   * an ImApp::App instance.
+   */
+  App* app() const { return app_; }
+
+ private:
+  App* app_;
+
+  void set_app_ptr(App* app_ptr) { app_ = app_ptr; }
+
+  friend ImApp::App;
 };
 
 /**
@@ -349,6 +367,7 @@ class App {
   void push_layer(std::unique_ptr<Layer> layer) {
     layers_.push_back(std::move(layer));
     layers_.back()->on_push();
+    layers_.back()->set_app_ptr(this);
   }
 
   /**
@@ -423,11 +442,22 @@ class App {
    */
   void set_default_style();
 
+  /**
+   * @brief Returns the current DPI scale for the application.
+   */
+  float dpi_scale() const { return dpi_scale_; }
+
+  /**
+   * @brief Updates the DPI scale for the application.
+   */
+  void update_dpi_scale();
+
  private:
   GLFWwindow* window;
   ImGuiIO* io_;
   ImGuiStyle* style_;
   std::vector<std::unique_ptr<Layer>> layers_;
+  float dpi_scale_;
 };
 
 }  // namespace ImApp
