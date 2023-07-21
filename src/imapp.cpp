@@ -302,7 +302,7 @@ void App::set_default_style() {
   style_->DisabledAlpha = 0.6000000238418579;
   style_->WindowPadding = ImVec2(8.0, 8.0);
   style_->WindowRounding = 0.0;
-  style_->WindowBorderSize = 1.0 * dpi_scale_;
+  style_->WindowBorderSize = float(1.0) * dpi_scale_;
   style_->WindowMinSize = ImVec2(32.0, 32.0);
   style_->WindowTitleAlign = ImVec2(0.0, 0.5);
   style_->WindowMenuButtonPosition = ImGuiDir_Left;
