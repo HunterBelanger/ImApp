@@ -20405,10 +20405,13 @@ void ImGui::DebugNodeDockNode(ImGuiDockNode* node, const char* label)
 
 static void FormatTextureIDForDebugDisplay(char* buf, int buf_size, ImTextureID tex_id)
 {
+    // Included a fix for type-punning warnings provided in 81e0be8. HB
+    union { void* ptr; int integer; } tex_id_opaque; // <-- 81e0be8
+    memcpy(&tex_id_opaque, &tex_id, ImMin(sizeof(void*), sizeof(tex_id))); // <-- 81e0be8
     if (sizeof(tex_id) >= sizeof(void*))
-        ImFormatString(buf, buf_size, "0x%p", (void*)*(intptr_t*)(void*)&tex_id);
+        ImFormatString(buf, buf_size, "0x%p", tex_id_opaque.ptr); // <-- 81e0be8
     else
-        ImFormatString(buf, buf_size, "0x%04X", *(int*)(void*)&tex_id);
+        ImFormatString(buf, buf_size, "0x%04X", tex_id_opaque.integer); // <-- 81e0be8
 }
 
 // [DEBUG] Display contents of ImDrawList
