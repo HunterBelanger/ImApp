@@ -13,10 +13,10 @@ include(FetchContent)
 option(IMAPP_INSTALL "Install the ImApp library and header files. Default value is OFF." OFF)
 
 # Get GLFW, to create window for us, etc.
-message(STATUS "Downloading GLFW v3.3.8")
+message(STATUS "Downloading GLFW v3.3.9")
 FetchContent_Declare(glfw
   GIT_REPOSITORY https://github.com/glfw/glfw
-  GIT_TAG        3.3.8
+  GIT_TAG        3.3.9
 )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
