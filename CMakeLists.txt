@@ -60,6 +60,9 @@ target_link_libraries(ImApp PRIVATE glfw OpenGL::GL)
 # Require C++17
 target_compile_features(ImApp PUBLIC cxx_std_17)
 
+# Compile position independent code to facilitate use in shared libraries
+set_target_properties(ImApp PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
 if(ZLIB_FOUND)
   # If we have Zlib available, use it for PNG compression
   target_link_libraries(ImApp PRIVATE ZLIB::ZLIB)
