@@ -21,10 +21,10 @@ those who want to make simple application without the need of high performance
 graphics.
 
 ImApp currently ships with the following libraries:
- * [ImGui](https://github.com/ocornut/imgui) v1.90.1-docking
+ * [ImGui](https://github.com/ocornut/imgui) v1.90.8-docking
  * [ImPlot](https://github.com/epezent/implot) f156599
- * [GLFW](https://github.com/glfw/glfw) v3.3.9
- * [stb\_image](https://github.com/nothings/stb) v2.29
+ * [GLFW](https://github.com/glfw/glfw) v3.4.0
+ * [stb\_image](https://github.com/nothings/stb) v2.30
  * [stb\_image\_write](https://github.com/nothings/stb) v1.16
  * [FontAwesome](https://github.com/FortAwesome/Font-Awesome) v6.2.0
  * [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) 685673d
