@@ -11,6 +11,7 @@ include(FetchContent)
 
 # Options
 option(IMAPP_INSTALL "Install the ImApp library and header files. Default value is OFF." OFF)
+option(IMAPP_USE_ZLIB "Use ZLIB for image compression. Default value is OFF." OFF)
 
 # Get GLFW, to create window for us, etc.
 message(STATUS "Downloading GLFW v3.3.9")
@@ -26,10 +27,6 @@ FetchContent_MakeAvailable(glfw)
 
 # Find OpenGL. This is required to render things to the screen.
 find_package(OpenGL REQUIRED)
-
-# Find Zlib. This is an optional dependency, for better compression
-# when writing image files.
-find_package(ZLIB)
 
 # Define library
 add_library(ImApp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/imapp.cpp
@@ -63,9 +60,13 @@ target_compile_features(ImApp PUBLIC cxx_std_17)
 # Compile position independent code to facilitate use in shared libraries
 set_target_properties(ImApp PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
-if(ZLIB_FOUND)
+if (IMAPP_USE_ZLIB)
+  # Find Zlib. This is an optional dependency, for better compression
+  # when writing image files.
+  find_package(ZLIB REQUIRED)
+
   # If we have Zlib available, use it for PNG compression
-  target_link_libraries(ImApp PRIVATE ZLIB::ZLIB)
+  target_link_libraries(ImApp PRIVATE ZLIB)
   target_compile_definitions(ImApp PRIVATE IMAPP_USE_ZLIB)
 endif()
 
