@@ -37,6 +37,7 @@
 #include <ImApp/IconsFontAwesome6Brands.h>
 #include <ImApp/imgui.h>
 #include <ImApp/implot.h>
+#include <ImApp/implot3d.h>
 
 #include <cstdint>
 #include <filesystem>

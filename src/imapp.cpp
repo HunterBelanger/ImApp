@@ -149,6 +149,7 @@ App::App(int w, int h, const char* name)
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImPlot::CreateContext();
+  ImPlot3D::CreateContext();
   style_ = &(ImGui::GetStyle());
   io_ = &(ImGui::GetIO());
 
@@ -210,6 +211,7 @@ App::~App() {
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot3D::DestroyContext();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
 
@@ -324,7 +326,7 @@ void App::set_default_style() {
   style_->GrabRounding = 0.0;
   style_->TabRounding = 3.0;  // 0.0;
   style_->TabBorderSize = 0.0;
-  style_->TabMinWidthForCloseButton = 0.0;
+  style_->TabCloseButtonMinWidthUnselected = 0.0;
   style_->ColorButtonPosition = ImGuiDir_Right;
   style_->ButtonTextAlign = ImVec2(0.5, 0.5);
   style_->SelectableTextAlign = ImVec2(0.0, 0.0);

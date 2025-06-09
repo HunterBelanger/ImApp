@@ -12,12 +12,13 @@ include(FetchContent)
 # Options
 option(IMAPP_INSTALL "Install the ImApp library and header files. Default value is OFF." OFF)
 option(IMAPP_USE_ZLIB "Use ZLIB for image compression. Default value is OFF." OFF)
+option(IMAPP_BUILD_DEMO "Build demonstration application. Default value is OFF." OFF)
 
 # Get GLFW, to create window for us, etc.
-message(STATUS "Downloading GLFW v3.3.9")
+message(STATUS "Downloading GLFW v3.3.10")
 FetchContent_Declare(glfw
   GIT_REPOSITORY https://github.com/glfw/glfw
-  GIT_TAG        3.3.9
+  GIT_TAG        3.3.10
 )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
@@ -39,7 +40,11 @@ add_library(ImApp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/imapp.cpp
                          ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/imgui_widgets.cpp
                          ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot.cpp
                          ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot_items.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot_demo.cpp)
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot_demo.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d_items.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d_demo.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d_meshes.cpp)
 
 # Add alias to make more friendly with FetchConent
 add_library(ImApp::ImApp ALIAS ImApp)
@@ -78,6 +83,12 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Compile options for Clang
   target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel") # Compile options for Intel
   target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic)
+endif()
+
+if(IMAPP_BUILD_DEMO)
+  message(STATUS "Building ImApp demo application")
+  add_executable(demo ${CMAKE_CURRENT_SOURCE_DIR}/src/demo.cpp)
+  target_link_libraries(demo ImApp)
 endif()
 
 # Install ImApp
