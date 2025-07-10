@@ -149,7 +149,6 @@ App::App(int w, int h, const char* name)
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImPlot::CreateContext();
-  ImPlot3D::CreateContext();
   style_ = &(ImGui::GetStyle());
   io_ = &(ImGui::GetIO());
 
@@ -211,7 +210,6 @@ App::~App() {
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
-  ImPlot3D::DestroyContext();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
 
