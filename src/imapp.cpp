@@ -104,10 +104,7 @@ static const ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 namespace ImApp {
 
 App::App(int w, int h, const char* name)
-    : window(nullptr),
-      io_(nullptr),
-      style_(nullptr),
-      layers_() {
+    : window(nullptr), io_(nullptr), style_(nullptr), layers_() {
   // Setup window
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) std::exit(1);
@@ -139,7 +136,7 @@ App::App(int w, int h, const char* name)
   window = glfwCreateWindow(w, h, name, NULL, NULL);
   if (window == nullptr) std::exit(1);
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);  // Enable vsync 
+  glfwSwapInterval(1);  // Enable vsync
 
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
@@ -147,7 +144,7 @@ App::App(int w, int h, const char* name)
   ImPlot::CreateContext();
   style_ = &(ImGui::GetStyle());
   io_ = &(ImGui::GetIO());
-  
+
   // ImPlot can make some really large meshes, and to make sure that we don't
   // get visual artifacts, we either need to use 32-bit indices (on ImGui side
   // in imconfig.h) or enable the VtxOffset option on the backend (which the
@@ -176,7 +173,8 @@ App::App(int w, int h, const char* name)
   ImFontConfig fa_icons_config;
   fa_icons_config.MergeMode = true;
   fa_icons_config.PixelSnapH = true;
-  //fa_icons_config.GlyphMinAdvanceX = icon_font_size_;  // Make the icon monospaced
+  // fa_icons_config.GlyphMinAdvanceX = icon_font_size_;  // Make the icon
+  // monospaced
   io_->Fonts->AddFontFromMemoryCompressedTTF(
       FASolid_compressed_data, FASolid_compressed_size, 0.f, &fa_icons_config);
 
@@ -184,9 +182,11 @@ App::App(int w, int h, const char* name)
   ImFontConfig fab_icons_config;
   fab_icons_config.MergeMode = true;
   fab_icons_config.PixelSnapH = true;
-  //fab_icons_config.GlyphMinAdvanceX = icon_font_size_;  // Make the icon monospaced
-  io_->Fonts->AddFontFromMemoryCompressedTTF(
-      FABrands_compressed_data, FABrands_compressed_size, 0.f, &fab_icons_config);
+  // fab_icons_config.GlyphMinAdvanceX = icon_font_size_;  // Make the icon
+  // monospaced
+  io_->Fonts->AddFontFromMemoryCompressedTTF(FABrands_compressed_data,
+                                             FABrands_compressed_size, 0.f,
+                                             &fab_icons_config);
 
   // We enable docking and viewports here temporarily, so the functionality
   // loaded in ImGui_ImplGlfw_InitForOpenGL.
@@ -490,7 +490,7 @@ void Image::send_to_gpu() {
   if (ogl_texture_id_) {
     // Texture already exists on GPU. We just need to update it.
     glBindTexture(GL_TEXTURE_2D, ogl_texture_id_.value());
-    
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, image_.data());
   } else {
