@@ -490,12 +490,9 @@ void Image::send_to_gpu() {
   if (ogl_texture_id_) {
     // Texture already exists on GPU. We just need to update it.
     glBindTexture(GL_TEXTURE_2D, ogl_texture_id_.value());
-
-    // For some reason it can't seem to find glTexSubImage2D, so for now I
-    // will just use glTexImage2D when updating the image.
-     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, image_.data());
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA,
-    //             GL_UNSIGNED_BYTE, image_.data());
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, image_.data());
   } else {
     // Texture not on GPU yet. Need to do everything from scratch.
 
@@ -507,10 +504,6 @@ void Image::send_to_gpu() {
     // Setup filtering parameters for display
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // The ImGui site said I should need these two lines for WebGL, but
-    // they weren't found by my loader so we will ignore them.
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Upload pixels into texture
 #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
