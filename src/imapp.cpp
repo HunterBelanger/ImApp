@@ -147,6 +147,13 @@ App::App(int w, int h, const char* name)
   ImPlot::CreateContext();
   style_ = &(ImGui::GetStyle());
   io_ = &(ImGui::GetIO());
+  
+  // ImPlot can make some really large meshes, and to make sure that we don't
+  // get visual artifacts, we either need to use 32-bit indices (on ImGui side
+  // in imconfig.h) or enable the VtxOffset option on the backend (which the
+  // backend must support !). Since we currently only allow the OpenGL3 backend
+  // and that supports the VtxOffset, we set that flag here.
+  io_->BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
   // Make sure that we are scaling for DPI
   io_->ConfigDpiScaleFonts = true;
@@ -486,10 +493,9 @@ void Image::send_to_gpu() {
 
     // For some reason it can't seem to find glTexSubImage2D, so for now I
     // will just use glTexImage2D when updating the image.
-    // glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_, height_, 0, GL_RGBA,
-    // GL_UNSIGNED_BYTE, image_.data());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, image_.data());
+     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, image_.data());
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA,
+    //             GL_UNSIGNED_BYTE, image_.data());
   } else {
     // Texture not on GPU yet. Need to do everything from scratch.
 
