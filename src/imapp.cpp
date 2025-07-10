@@ -107,8 +107,7 @@ App::App(int w, int h, const char* name)
     : window(nullptr),
       io_(nullptr),
       style_(nullptr),
-      layers_(),
-      dpi_scale_(1.0f) {
+      layers_() {
   // Setup window
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) std::exit(1);
@@ -140,10 +139,7 @@ App::App(int w, int h, const char* name)
   window = glfwCreateWindow(w, h, name, NULL, NULL);
   if (window == nullptr) std::exit(1);
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);  // Enable vsync
-
-  // Now we should be able to get the DPI scale
-  this->update_dpi_scale();
+  glfwSwapInterval(1);  // Enable vsync 
 
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
@@ -152,42 +148,38 @@ App::App(int w, int h, const char* name)
   style_ = &(ImGui::GetStyle());
   io_ = &(ImGui::GetIO());
 
-  // Enable Keyboard Controls
-  this->enable_keyboard();
-
-  // TODO should determine these based on DPI
-  constexpr float FONT_SIZE = 18.;
-  constexpr float ICON_FONT_SIZE = 16.;
-
-  // Load Roboto font
-  io_->Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data,
-                                             RobotoRegular_compressed_size,
-                                             FONT_SIZE * dpi_scale_);
-
-  // Merge icons from FontAwesome Solid
-  static const ImWchar fa_icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
-  ImFontConfig fa_icons_config;
-  fa_icons_config.MergeMode = true;
-  fa_icons_config.PixelSnapH = true;
-  fa_icons_config.GlyphMinAdvanceX =
-      ICON_FONT_SIZE;  // Make the icon monospaced
-  io_->Fonts->AddFontFromMemoryCompressedTTF(
-      FASolid_compressed_data, FASolid_compressed_size, ICON_FONT_SIZE,
-      &fa_icons_config, fa_icons_ranges);
-
-  // Merge icons from FontAwesome Brands
-  static const ImWchar fab_icons_ranges[] = {ICON_MIN_FAB, ICON_MAX_16_FAB, 0};
-  ImFontConfig fab_icons_config;
-  fab_icons_config.MergeMode = true;
-  fab_icons_config.PixelSnapH = true;
-  fab_icons_config.GlyphMinAdvanceX =
-      ICON_FONT_SIZE;  // Make the icon monospaced
-  io_->Fonts->AddFontFromMemoryCompressedTTF(
-      FABrands_compressed_data, FABrands_compressed_size,
-      ICON_FONT_SIZE * dpi_scale_, &fab_icons_config, fab_icons_ranges);
+  // Make sure that we are scaling for DPI
+  io_->ConfigDpiScaleFonts = true;
+  io_->ConfigDpiScaleViewports = true;
 
   // Setup style
   this->set_default_style();
+
+  // Initialize the font size here
+  style_->FontSizeBase = 18.f;
+
+  // Enable Keyboard Controls
+  this->enable_keyboard();
+
+  // Load Roboto font
+  io_->Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data,
+                                             RobotoRegular_compressed_size);
+
+  // Merge icons from FontAwesome Solid
+  ImFontConfig fa_icons_config;
+  fa_icons_config.MergeMode = true;
+  fa_icons_config.PixelSnapH = true;
+  //fa_icons_config.GlyphMinAdvanceX = icon_font_size_;  // Make the icon monospaced
+  io_->Fonts->AddFontFromMemoryCompressedTTF(
+      FASolid_compressed_data, FASolid_compressed_size, 0.f, &fa_icons_config);
+
+  // Merge icons from FontAwesome Brands
+  ImFontConfig fab_icons_config;
+  fab_icons_config.MergeMode = true;
+  fab_icons_config.PixelSnapH = true;
+  //fab_icons_config.GlyphMinAdvanceX = icon_font_size_;  // Make the icon monospaced
+  io_->Fonts->AddFontFromMemoryCompressedTTF(
+      FABrands_compressed_data, FABrands_compressed_size, 0.f, &fab_icons_config);
 
   // We enable docking and viewports here temporarily, so the functionality
   // loaded in ImGui_ImplGlfw_InitForOpenGL.
@@ -215,19 +207,6 @@ App::~App() {
 
   glfwDestroyWindow(window);
   glfwTerminate();
-}
-
-void App::update_dpi_scale() {
-  auto monitor = glfwGetWindowMonitor(window);
-  if (!monitor) monitor = glfwGetPrimaryMonitor();
-
-  if (monitor) {
-    float x, y;
-    glfwGetMonitorContentScale(monitor, &x, &y);
-    dpi_scale_ = x;
-  } else {
-    dpi_scale_ = 1.;
-  }
 }
 
 void App::run() {
@@ -302,7 +281,7 @@ void App::set_default_style() {
   style_->DisabledAlpha = 0.6000000238418579;
   style_->WindowPadding = ImVec2(8.0, 8.0);
   style_->WindowRounding = 0.0;
-  style_->WindowBorderSize = float(1.0) * dpi_scale_;
+  style_->WindowBorderSize = 1.0;
   style_->WindowMinSize = ImVec2(32.0, 32.0);
   style_->WindowTitleAlign = ImVec2(0.0, 0.5);
   style_->WindowMenuButtonPosition = ImGuiDir_Left;

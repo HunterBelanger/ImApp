@@ -442,22 +442,11 @@ class App {
    */
   void set_default_style();
 
-  /**
-   * @brief Returns the current DPI scale for the application.
-   */
-  float dpi_scale() const { return dpi_scale_; }
-
-  /**
-   * @brief Updates the DPI scale for the application.
-   */
-  void update_dpi_scale();
-
  private:
   GLFWwindow* window;
   ImGuiIO* io_;
   ImGuiStyle* style_;
   std::vector<std::unique_ptr<Layer>> layers_;
-  float dpi_scale_;
 };
 
 }  // namespace ImApp

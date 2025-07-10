@@ -21,7 +21,7 @@ those who want to make simple application without the need of high performance
 graphics.
 
 ImApp currently ships with the following libraries:
- * [ImGui](https://github.com/ocornut/imgui) v1.91.9b-docking
+ * [ImGui](https://github.com/ocornut/imgui) v1.92.1-docking
  * [ImPlot](https://github.com/epezent/implot) 3da8bd3
  * [GLFW](https://github.com/glfw/glfw) v3.3.10
  * [stb\_image](https://github.com/nothings/stb) v2.30
