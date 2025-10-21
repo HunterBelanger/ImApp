@@ -366,8 +366,8 @@ class App {
    */
   void push_layer(std::unique_ptr<Layer> layer) {
     layers_.push_back(std::move(layer));
-    layers_.back()->on_push();
     layers_.back()->set_app_ptr(this);
+    layers_.back()->on_push();
   }
 
   /**
