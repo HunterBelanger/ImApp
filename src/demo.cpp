@@ -8,6 +8,8 @@ class DemoLayer : public ImApp::Layer {
       ImGui::ShowDemoWindow();
 
       ImPlot::ShowDemoWindow();
+
+      ImPlot3D::ShowDemoWindow();
     }
 };
 

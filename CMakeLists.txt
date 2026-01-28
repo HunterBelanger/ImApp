@@ -40,7 +40,11 @@ add_library(ImApp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/imapp.cpp
                          ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/imgui_widgets.cpp
                          ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot.cpp
                          ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot_items.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot_demo.cpp)
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot_demo.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d_items.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d_meshes.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/implot3d_demo.cpp)
 
 # Add alias to make more friendly with FetchConent
 add_library(ImApp::ImApp ALIAS ImApp)

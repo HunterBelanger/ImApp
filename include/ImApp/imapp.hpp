@@ -37,6 +37,7 @@
 #include <ImApp/IconsFontAwesome6Brands.h>
 #include <ImApp/imgui.h>
 #include <ImApp/implot.h>
+#include <ImApp/implot3d.h>
 
 #include <cstdint>
 #include <filesystem>
@@ -302,19 +303,19 @@ class Layer {
   /**
    * @breif A virtual method which is called when a Layer is added to an App.
    */
-  virtual void on_push(){};
+  virtual void on_push() {};
 
   /**
    * @breif A virtual method which is called for each frame in the rendering
    * pipeline.
    */
-  virtual void render(){};
+  virtual void render() {};
 
   /**
    * @breif A virtual method which is called on all Layer instances in an App,
    * when the App is destroyed, or is closed.
    */
-  virtual void on_kill(){};
+  virtual void on_kill() {};
 
   /**
    * @brief Returns a pointer to the associated ImApp::App instance. This
