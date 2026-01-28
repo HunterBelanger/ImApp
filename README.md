@@ -22,7 +22,7 @@ graphics.
 
 ImApp currently ships with the following libraries:
  * [ImGui](https://github.com/ocornut/imgui) v1.92.4-docking
- * [ImPlot](https://github.com/epezent/implot) 3da8bd3
+ * [ImPlot](https://github.com/epezent/implot) 81b8b19 (just after v0.17)
  * [GLFW](https://github.com/glfw/glfw) v3.3.10
  * [stb\_image](https://github.com/nothings/stb) v2.30
  * [stb\_image\_write](https://github.com/nothings/stb) v1.16
