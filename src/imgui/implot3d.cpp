@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SPDX-FileCopyrightText: 2024-2025 Breno Cunha Queiroz
+// SPDX-FileCopyrightText: 2024-2026 Breno Cunha Queiroz
 
 // ImPlot3D v0.4 WIP
 
@@ -47,6 +47,50 @@ Occasionally introducing changes that are breaking the API. We try to make the b
 Below is a change-log of API breaking changes only. If you are using one of the functions listed, expect to have to fix some code.
 When you are not sure about an old symbol or function name, try using the Search/Find function of your IDE to look for comments or references in all
 implot3d files. You can read releases logs https://github.com/brenocq/implot3d/releases for more details.
+
+- 2026/02/03 (0.4) - ImPlotSpec was made the default and _only_ way of styling plot items. The SetNextXXXStyle functions have been removed.
+                      - SetNextLineStyle has been removed, styling should be set via ImPlot3DSpec.
+                          ```cpp
+                          // Before
+                          ImPlot3D::SetNextLineStyle(line_color, line_weight);
+                          ImPlot3D::PlotLine("Line", xs, ys, zs, count);
+
+                          // After
+                          ImPlot3DSpec spec;
+                          spec.LineColor = line_color;
+                          spec.LineWeight = line_weight;
+                          ImPlot3D::PlotLine("Line", xs, ys, zs, count, spec);
+                          ```
+                      - SetNextFillStyle has been removed, styling should be set via ImPlot3DSpec.
+                          ```cpp
+                          // Before
+                          ImPlot3D::SetNextFillStyle(fill_color, fill_alpha);
+                          ImPlot3D::PlotTriangle("Triangle", xs, ys, zs, count);
+
+                          // After
+                          ImPlot3DSpec spec;
+                          spec.FillColor = fill_color;
+                          spec.FillAlpha = fill_alpha;
+                          ImPlot3D::PlotTriangle("Triangle", xs, ys, zs, count, spec);
+                          ```
+                      - SetNextMarkerStyle has been removed, styling should be set via ImPlot3DSpec.
+                          ```cpp
+                          // Before:
+                          ImPlot3D::SetNextMarkerStyle(marker, marker_size, fill_color, line_weight, marker_outline_color);
+                          ImPlot3D::PlotScatter("Scatter", xs, ys, zs, count);
+
+                          // After
+                          ImPlot3DSpec spec;
+                          spec.LineWeight = line_weight;
+                          spec.Marker = marker;
+                          spec.MarkerSize = marker_size;
+                          spec.MarkerLineColor = marker_outline_color;
+                          spec.MarkerFillColor = fill_color;
+                          ImPlot3D::PlotScatter("Scatter", xs, ys, zs, count, spec);
+                          ```
+                      - Flags, Offset and Stride should also be set via ImPlot3DSpec now.
+- 2026/02/02 (0.4) - Item colors removed from ImPlot3DCol_, it's no longer possible to push/pop individual item colors.
+- 2026/02/02 (0.4) - ImPlot3DStyle::MarkerWeight was removed. The marker line weight is now controlled by ImPlot3DStyle::LineWeight.
 
 - 2025/11/15 (0.3) - Renamed GetPlotPos() -> GetPlotRectPos() and GetPlotSize() -> GetPlotRectSize() for clarity in 3D context.
                      Old functions are marked as deprecated and will be removed in v1.0.
@@ -296,7 +340,7 @@ ImVec2 CalcLegendSize(ImPlot3DItemGroup& items, const ImVec2& pad, const ImVec2&
     return legend_size;
 }
 
-void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool /*hovered*/, const ImVec2& pad, const ImVec2& spacing, bool vertical,
+void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, const ImVec2& pad, const ImVec2& spacing, bool vertical,
                        ImDrawList& draw_list) {
     const float txt_ht = ImGui::GetTextLineHeight();
     const float icon_size = txt_ht;
@@ -391,7 +435,7 @@ void RenderLegend() {
     draw_list->AddRect(legend.Rect.Min, legend.Rect.Max, col_bd);
 
     // Render legends
-    ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
+    ShowLegendEntries(plot.Items, legend.Rect, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
 }
 
 //-----------------------------------------------------------------------------
@@ -520,7 +564,7 @@ int Active3DFacesToAxisLookupIndex(const bool* active_faces) {
     return ((int)active_faces[0] << 2) | ((int)active_faces[1] << 1) | ((int)active_faces[2]);
 }
 
-int GetMouseOverPlane(const ImPlot3DPlot& /*plot*/, const bool* active_faces, const ImVec2* corners_pix, int* plane_out = nullptr) {
+int GetMouseOverPlane(const bool* active_faces, const ImVec2* corners_pix, int* plane_out = nullptr) {
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 mouse_pos = io.MousePos;
     if (plane_out)
@@ -545,7 +589,7 @@ int GetMouseOverPlane(const ImPlot3DPlot& /*plot*/, const bool* active_faces, co
     return -1; // Not over any active plane
 }
 
-int GetMouseOverAxis(const ImPlot3DPlot& /*plot*/, const bool* active_faces, const ImVec2* corners_pix, const int plane_2d, int* edge_out = nullptr) {
+int GetMouseOverAxis(const bool* active_faces, const ImVec2* corners_pix, const int plane_2d, int* edge_out = nullptr) {
     const float axis_proximity_threshold = 15.0f; // Distance in pixels to consider the mouse "close" to an axis
 
     ImGuiIO& io = ImGui::GetIO();
@@ -599,8 +643,8 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
     int hovered_plane = -1;
     if (!plot.Held) {
         // If the mouse is not held, highlight plane hovering when mouse over it
-        hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
-        if (GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d) != -1)
+        hovered_plane = GetMouseOverPlane(active_faces, corners_pix);
+        if (GetMouseOverAxis(active_faces, corners_pix, plane_2d) != -1)
             hovered_plane = -1;
     } else {
         // If the mouse is held, highlight the held plane
@@ -619,7 +663,7 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
 void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces, const int plane_2d) {
     int hovered_edge = -1;
     if (!plot.Held)
-        GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d, &hovered_edge);
+        GetMouseOverAxis(active_faces, corners_pix, plane_2d, &hovered_edge);
     else
         hovered_edge = plot.HeldEdgeIdx;
 
@@ -2185,9 +2229,9 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImVec2 corners_pix[8];
     ComputeBoxCornersPix(plot, corners_pix, corners);
     int hovered_plane_idx = -1;
-    int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix, &hovered_plane_idx);
+    int hovered_plane = GetMouseOverPlane(active_faces, corners_pix, &hovered_plane_idx);
     int hovered_edge_idx = -1;
-    int hovered_axis = GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d, &hovered_edge_idx);
+    int hovered_axis = GetMouseOverAxis(active_faces, corners_pix, plane_2d, &hovered_edge_idx);
     if (hovered_axis != -1) {
         hovered_plane_idx = -1;
         hovered_plane = -1;
@@ -2733,11 +2777,10 @@ struct ImPlot3DStyleVarInfo {
 
 static const ImPlot3DStyleVarInfo GPlot3DStyleVarInfo[] = {
     // Item style
-    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, LineWeight)},   // ImPlot3DStyleVar_LineWeight
-    {ImGuiDataType_S32, 1, (ImU32)offsetof(ImPlot3DStyle, Marker)},         // ImPlot3DStyleVar_Marker
-    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, MarkerSize)},   // ImPlot3DStyleVar_MarkerSize
-    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, MarkerWeight)}, // ImPlot3DStyleVar_MarkerWeight
-    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, FillAlpha)},    // ImPlot3DStyleVar_FillAlpha
+    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, LineWeight)}, // ImPlot3DStyleVar_LineWeight
+    {ImGuiDataType_S32, 1, (ImU32)offsetof(ImPlot3DStyle, Marker)},       // ImPlot3DStyleVar_Marker
+    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, MarkerSize)}, // ImPlot3DStyleVar_MarkerSize
+    {ImGuiDataType_Float, 1, (ImU32)offsetof(ImPlot3DStyle, FillAlpha)},  // ImPlot3DStyleVar_FillAlpha
 
     // Plot style
     {ImGuiDataType_Float, 2, (ImU32)offsetof(ImPlot3DStyle, PlotDefaultSize)}, // ImPlot3DStyleVar_Plot3DDefaultSize
@@ -2765,10 +2808,6 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
-    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_InlayText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = IMPLOT3D_AUTO_COL;
@@ -2786,10 +2825,6 @@ void StyleColorsDark(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
-    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_InlayText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
@@ -2807,10 +2842,6 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
-    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_InlayText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -2828,10 +2859,6 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
-    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImPlot3DCol_InlayText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
@@ -2969,6 +2996,14 @@ void PopStyleVar(int count) {
 ImVec4 GetStyleColorVec4(ImPlot3DCol idx) { return IsColorAuto(idx) ? GetAutoColor(idx) : GImPlot3D->Style.Colors[idx]; }
 
 ImU32 GetStyleColorU32(ImPlot3DCol idx) { return ImGui::ColorConvertFloat4ToU32(ImPlot3D::GetStyleColorVec4(idx)); }
+
+ImPlot3DMarker NextMarker() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentItems != nullptr, "NextMarker() needs to be called between BeginPlot() and EndPlot()!");
+    const int idx = gp.CurrentItems->MarkerIdx % ImPlot3DMarker_COUNT;
+    ++gp.CurrentItems->MarkerIdx;
+    return idx;
+}
 
 //------------------------------------------------------------------------------
 // [SECTION] Colormaps
@@ -3218,10 +3253,6 @@ bool IsColorAuto(ImPlot3DCol idx) { return IsColorAuto(GImPlot3D->Style.Colors[i
 
 ImVec4 GetAutoColor(ImPlot3DCol idx) {
     switch (idx) {
-        case ImPlot3DCol_Line: return IMPLOT3D_AUTO_COL;          // Plot dependent
-        case ImPlot3DCol_Fill: return IMPLOT3D_AUTO_COL;          // Plot dependent
-        case ImPlot3DCol_MarkerOutline: return IMPLOT3D_AUTO_COL; // Plot dependent
-        case ImPlot3DCol_MarkerFill: return IMPLOT3D_AUTO_COL;    // Plot dependent
         case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_InlayText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_FrameBg: return ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
@@ -3239,8 +3270,7 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
 
 const char* GetStyleColorName(ImPlot3DCol idx) {
     static const char* color_names[ImPlot3DCol_COUNT] = {
-        "Line",       "Fill",     "MarkerOutline", "MarkerFill", "TitleText", "InlayText", "FrameBg",  "PlotBg",
-        "PlotBorder", "LegendBg", "LegendBorder",  "LegendText", "AxisText",  "AxisGrid",  "AxisTick",
+        "TitleText", "InlayText", "FrameBg", "PlotBg", "PlotBorder", "LegendBg", "LegendBorder", "LegendText", "AxisText", "AxisGrid", "AxisTick",
     };
     return color_names[idx];
 }
@@ -3838,7 +3868,6 @@ ImPlot3DStyle::ImPlot3DStyle() {
     LineWeight = 1.0f;
     Marker = ImPlot3DMarker_None;
     MarkerSize = 4.0f;
-    MarkerWeight = 1.0f;
     FillAlpha = 1.0f;
     // Plot style
     PlotDefaultSize = ImVec2(400, 400);
@@ -3928,7 +3957,7 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
     bool active_faces[3];
     ImVec2 corners_pix[8];
     ImPlot3DPoint corners[8];
-    int plane_2d;
+    int plane_2d = -1;
     int axis_corners[3][2];
     char buff[16];
     // Enum used to indicate how a certain type will be displayed
