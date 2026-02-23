@@ -27,6 +27,9 @@ set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target")
 FetchContent_MakeAvailable(glfw)
 
 # Find OpenGL. This is required to render things to the screen.
+# We prefer the legacy option when possible on Linux systems, as this
+# facilitates including ImApp in a distributable Python wheel.
+set(OpenGL_GL_PREFERENCE LEGACY)
 find_package(OpenGL REQUIRED)
 
 # Define library
