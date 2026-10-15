@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2024-2026 Breno Cunha Queiroz
 
-// ImPlot3D v0.4 WIP
+// ImPlot3D v0.5 WIP
 
 // Acknowledgments:
 //  ImPlot3D is heavily inspired by ImPlot
@@ -45,8 +45,8 @@
 #define IMPLOT3D_API
 #endif
 
-#define IMPLOT3D_VERSION "0.4 WIP"            // ImPlot3D version
-#define IMPLOT3D_VERSION_NUM 401              // Integer encoded version
+#define IMPLOT3D_VERSION "0.5 WIP"            // ImPlot3D version
+#define IMPLOT3D_VERSION_NUM 500              // Integer encoded version
 #define IMPLOT3D_AUTO -1                      // Deduce variable automatically
 #define IMPLOT3D_AUTO_COL ImVec4(0, 0, 0, -1) // Deduce color automatically
 #define IMPLOT3D_TMP template <typename T> IMPLOT3D_API
@@ -103,17 +103,22 @@ typedef ImTextureID ImTextureRef;
 
 // Plotting properties. These provide syntactic sugar for creating ImPlot3DSpec from (ImPlot3DProp,value) pairs
 enum ImPlot3DProp_ {
-    ImPlot3DProp_LineColor,       // Line color; IMPLOT3D_AUTO_COL will use next Colormap color
-    ImPlot3DProp_LineWeight,      // Line weight in pixels
-    ImPlot3DProp_FillColor,       // Fill color (applies to shaded regions); IMPLOT3D_AUTO_COL will use next Colormap color
-    ImPlot3DProp_FillAlpha,       // Alpha multiplier (applies to FillColor and MarkerFillColor)
-    ImPlot3DProp_Marker,          // Marker type
-    ImPlot3DProp_MarkerSize,      // Size of markers (radius) *in pixels*
-    ImPlot3DProp_MarkerLineColor, // Marker outline color; IMPLOT3D_AUTO_COL will use next LineColor
-    ImPlot3DProp_MarkerFillColor, // Marker fill color; IMPLOT3D_AUTO_COL will use LineColor
-    ImPlot3DProp_Offset,          // Data index offset
-    ImPlot3DProp_Stride,          // Data stride in bytes; IMPLOT3D_AUTO will result in sizeof(T) where T is the type passed to PlotX
-    ImPlot3DProp_Flags            // Optional item flags; can be composed from common ImPlot3DItemFlags and/or specialized ImPlot3DXFlags
+    ImPlot3DProp_LineColor,        // Line color; IMPLOT3D_AUTO_COL will use next Colormap color
+    ImPlot3DProp_LineColors,       // Array of line colors (ImU32*); if nullptr, use LineColor for all
+    ImPlot3DProp_LineWeight,       // Line weight in pixels
+    ImPlot3DProp_FillColor,        // Fill color (applies to shaded regions); IMPLOT3D_AUTO_COL will use next Colormap color
+    ImPlot3DProp_FillColors,       // Array of fill colors (ImU32*); if nullptr, use FillColor for all
+    ImPlot3DProp_FillAlpha,        // Alpha multiplier (applies to FillColor, FillColors, MarkerFillColor, and MarkerFillColors)
+    ImPlot3DProp_Marker,           // Marker type
+    ImPlot3DProp_MarkerSize,       // Size of markers (radius) *in pixels*
+    ImPlot3DProp_MarkerSizes,      // Array of marker sizes (float*); if nullptr, use MarkerSize for all
+    ImPlot3DProp_MarkerLineColor,  // Marker outline color; IMPLOT3D_AUTO_COL will use next LineColor
+    ImPlot3DProp_MarkerLineColors, // Array of marker outline colors (ImU32*); if nullptr, use MarkerLineColor for all
+    ImPlot3DProp_MarkerFillColor,  // Marker fill color; IMPLOT3D_AUTO_COL will use LineColor
+    ImPlot3DProp_MarkerFillColors, // Array of marker fill colors (ImU32*); if nullptr, use MarkerFillColor for all
+    ImPlot3DProp_Offset,           // Data index offset
+    ImPlot3DProp_Stride,           // Data stride in bytes; IMPLOT3D_AUTO will result in sizeof(T) where T is the type passed to PlotX
+    ImPlot3DProp_Flags             // Optional item flags; can be composed from common ImPlot3DItemFlags and/or specialized ImPlot3DXFlags
 };
 
 // Flags for ImPlot3D::BeginPlot()
@@ -151,9 +156,12 @@ enum ImPlot3DCol_ {
     ImPlot3DCol_LegendBorder, // Legend border color
     ImPlot3DCol_LegendText,   // Legend text color
     // Axis colors
-    ImPlot3DCol_AxisText, // Axis label and tick lables color
-    ImPlot3DCol_AxisGrid, // Axis grid color
-    ImPlot3DCol_AxisTick, // Axis tick color (defaults to AxisGrid)
+    ImPlot3DCol_AxisText,      // Axis label and tick lables color
+    ImPlot3DCol_AxisGrid,      // Axis grid color
+    ImPlot3DCol_AxisTick,      // Axis tick color (defaults to AxisGrid)
+    ImPlot3DCol_AxisBg,        // Background color of axis hover region (defaults to transparent)
+    ImPlot3DCol_AxisBgHovered, // Axis hover color (defaults to ImGuiCol_ButtonHovered)
+    ImPlot3DCol_AxisBgActive,  // Axis active color (defaults to ImGuiCol_ButtonActive)
     ImPlot3DCol_COUNT,
 };
 
@@ -375,13 +383,18 @@ enum ImPlot3DColormap_ {
 //    });
 struct ImPlot3DSpec {
     ImVec4 LineColor = IMPLOT3D_AUTO_COL;        // Line color; IMPLOT3D_AUTO_COL will use next Colormap color
+    ImU32* LineColors = nullptr;                 // Per-index line colors; if nullptr, use LineColor for all
     float LineWeight = 1.0f;                     // Line weight in pixels
     ImVec4 FillColor = IMPLOT3D_AUTO_COL;        // Fill color (applies to shaded regions); IMPLOT3D_AUTO_COL will use next Colormap color
-    float FillAlpha = IMPLOT3D_AUTO;             // Alpha multiplier (applies to FillColor and MarkerFillColor)
+    ImU32* FillColors = nullptr;                 // Per-index fill colors; if nullptr, use FillColor for all
+    float FillAlpha = IMPLOT3D_AUTO;             // Alpha multiplier (applies to FillColor, FillColors, MarkerFillColor, and MarkerFillColors)
     ImPlot3DMarker Marker = ImPlot3DMarker_Auto; // Marker type
     float MarkerSize = IMPLOT3D_AUTO;            // Size of markers (radius) *in pixels*
+    float* MarkerSizes = nullptr;                // Per-index marker sizes; if nullptr, use MarkerSize for all
     ImVec4 MarkerLineColor = IMPLOT3D_AUTO_COL;  // Marker outline color; IMPLOT3D_AUTO_COL will use LineColor
+    ImU32* MarkerLineColors = nullptr;           // Per-index marker outline colors; if nullptr, use MarkerLineColor for all
     ImVec4 MarkerFillColor = IMPLOT3D_AUTO_COL;  // Marker fill color; IMPLOT3D_AUTO_COL will use LineColor
+    ImU32* MarkerFillColors = nullptr;           // Per-index marker fill colors; if nullptr, use MarkerFillColor for all
     int Offset = 0;                              // Data index offset
     int Stride = IMPLOT3D_AUTO;                  // Data stride in bytes; IMPLOT3D_AUTO will result in sizeof(T) where T is the type passed to PlotX
     ImPlot3DItemFlags Flags =
@@ -421,6 +434,27 @@ struct ImPlot3DSpec {
             default: break;
         }
         IM_ASSERT(0 && "User provided an ImPlot3DProp which cannot be set from scalar value!");
+    }
+
+    // Set a property from an ImU32* array (per-index colors).
+    void SetProp(ImPlot3DProp prop, ImU32* v) {
+        switch (prop) {
+            case ImPlot3DProp_LineColors: LineColors = v; return;
+            case ImPlot3DProp_FillColors: FillColors = v; return;
+            case ImPlot3DProp_MarkerLineColors: MarkerLineColors = v; return;
+            case ImPlot3DProp_MarkerFillColors: MarkerFillColors = v; return;
+            default: break;
+        }
+        IM_ASSERT(0 && "User provided an ImPlot3DProp which cannot be set from ImU32* value!");
+    }
+
+    // Set a property from a float* array (per-index sizes).
+    void SetProp(ImPlot3DProp prop, float* v) {
+        switch (prop) {
+            case ImPlot3DProp_MarkerSizes: MarkerSizes = v; return;
+            default: break;
+        }
+        IM_ASSERT(0 && "User provided an ImPlot3DProp which cannot be set from float* value!");
     }
 
     // Set a property from an ImVec4 value.
@@ -617,9 +651,18 @@ IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const
 IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int x_count, int y_count, double scale_min = 0.0,
                               double scale_max = 0.0, const ImPlot3DSpec& spec = ImPlot3DSpec());
 
-// Plots a 3D mesh given vertex positions and indices. Triangles are defined by the index buffer (every 3 indices form a triangle)
-IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count,
-                           const ImPlot3DSpec& spec = ImPlot3DSpec());
+// Plots a 3D mesh given vertex positions as separate coordinate arrays and an index buffer.
+// Triangles are defined by the index buffer (every 3 indices form a triangle).
+// Spec.Offset and Spec.Stride apply to the vertex coordinate arrays only, not to the index buffer.
+// Color array semantics:
+//   - FillColors / LineColors:          idx_count entries, indexed by position in the index buffer.
+//                                       Each triangle has 3 consecutive color entries (one per corner).
+//                                       Setting all 3 to the same value gives flat per-triangle shading.
+//                                       Setting different values enables Gouraud shading (GPU-interpolated).
+//                                       To shade by vertex, map: FillColors[i] = vtx_colors[idxs[i]].
+//   - MarkerFillColors / MarkerLineColors: vtx_count entries, one per unique vertex.
+IMPLOT3D_TMP void PlotMesh(const char* label_id, const T* vtx_xs, const T* vtx_ys, const T* vtx_zs, const unsigned int* idxs, int vtx_count,
+                           int idx_count, const ImPlot3DSpec& spec = ImPlot3DSpec());
 
 // Plots a rectangular image in 3D defined by its center and two direction vectors (axes).
 // #center is the center of the rectangle in plot coordinates.
@@ -1008,8 +1051,7 @@ struct ImPlot3DStyle {
     // Constructor
     IMPLOT3D_API ImPlot3DStyle();
     ImPlot3DStyle(const ImPlot3DStyle& other) = default;
-    ImPlot3DStyle& operator=(const ImPlot3DStyle& other) =
-  default;
+    ImPlot3DStyle& operator=(const ImPlot3DStyle& other) = default;
 };
 
 //-----------------------------------------------------------------------------
@@ -1066,15 +1108,25 @@ extern unsigned int duck_idx[DUCK_IDX_COUNT];  // Duck indices
 namespace ImPlot3D {
 
 // OBSOLETED in v0.4 (from February 2026)
-// IMPLOT_API void SetNextLineStyle(const ImVec4& col = IMPLOT_AUTO_COL, float weight = IMPLOT_AUTO); // OBSOLETED IN v0.4 // Set ImPlotSpec.LineColor/LineWeight or construct ImPlotSpec with { ImPlotSpec_LineColor, color, ImPlotSpec_LineWeight, weight }.
+// IMPLOT_API void SetNextLineStyle(const ImVec4& col = IMPLOT_AUTO_COL, float weight = IMPLOT_AUTO); // OBSOLETED IN v0.4 // Set
+// ImPlotSpec.LineColor/LineWeight or construct ImPlotSpec with { ImPlotSpec_LineColor, color, ImPlotSpec_LineWeight, weight }.
 
-// IMPLOT_API void SetNextFillStyle(const ImVec4& col = IMPLOT_AUTO_COL, float alpha_mod = IMPLOT_AUTO);// OBSOLETED IN v0.4 // Set ImPlotSpec.FillColor/FillAlpha or construct ImPlotSpec with { ImPlotSpec_FillColor, color, ImPlotSpec_FillAlpha, alpha }.
+// IMPLOT_API void SetNextFillStyle(const ImVec4& col = IMPLOT_AUTO_COL, float alpha_mod = IMPLOT_AUTO);// OBSOLETED IN v0.4 // Set
+// ImPlotSpec.FillColor/FillAlpha or construct ImPlotSpec with { ImPlotSpec_FillColor, color, ImPlotSpec_FillAlpha, alpha }.
 
-// IMPLOT_API void SetNextMarkerStyle(ImPlotMarker marker = IMPLOT_AUTO, float size = IMPLOT_AUTO, const ImVec4& fill = IMPLOT_AUTO_COL, float weight = IMPLOT_AUTO, const ImVec4& outline = IMPLOT_AUTO_COL); // OBSOLETED IN v0.4 // Set ImPlotSpec.Marker/MarkerSize/MarkerFillColor/LineWeight/MarkerLineColor or construct ImPlotSpec with { ImPlotSpec_Marker, marker, ImPlotSpec_MarkerSize, size, ImPlotSpec_MarkerFillColor, fill_color, ImPlotSpec_LineWeight, weight, ImPlotSpec_MarkerLineColor, outline }.
+// IMPLOT_API void SetNextMarkerStyle(ImPlotMarker marker = IMPLOT_AUTO, float size = IMPLOT_AUTO, const ImVec4& fill = IMPLOT_AUTO_COL, float weight
+// = IMPLOT_AUTO, const ImVec4& outline = IMPLOT_AUTO_COL); // OBSOLETED IN v0.4 // Set
+// ImPlotSpec.Marker/MarkerSize/MarkerFillColor/LineWeight/MarkerLineColor or construct ImPlotSpec with { ImPlotSpec_Marker, marker,
+// ImPlotSpec_MarkerSize, size, ImPlotSpec_MarkerFillColor, fill_color, ImPlotSpec_LineWeight, weight, ImPlotSpec_MarkerLineColor, outline }.
 
 // OBSOLETED in v0.3 -> PLANNED REMOVAL in v1.0
 IMPLOT3D_DEPRECATED(IMPLOT3D_API ImVec2 GetPlotPos());  // Renamed to GetPlotRectPos()
 IMPLOT3D_DEPRECATED(IMPLOT3D_API ImVec2 GetPlotSize()); // Renamed to GetPlotRectSize()
+
+// OBSOLETED in v0.4 -> PLANNED REMOVAL in v1.0
+// Use PlotMesh(label_id, vtx_xs, vtx_ys, vtx_zs, idx, vtx_count, idx_count, spec) instead.
+IMPLOT3D_DEPRECATED(IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idxs, int vtx_count, int idx_count,
+                                               const ImPlot3DSpec& spec = ImPlot3DSpec()));
 
 } // namespace ImPlot3D
 

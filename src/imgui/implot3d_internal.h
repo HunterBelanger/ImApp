@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2024-2026 Breno Cunha Queiroz
 
-// ImPlot3D v0.4 WIP
+// ImPlot3D v0.5 WIP
 
 // Acknowledgments:
 //  ImPlot3D is heavily inspired by ImPlot
@@ -344,9 +344,11 @@ struct ImPlot3DLegend {
     ImPlot3DLegendFlags PreviousFlags;
     ImPlot3DLocation Location;
     ImPlot3DLocation PreviousLocation;
+    ImVec2 Scroll;
     ImVector<int> Indices;
     ImGuiTextBuffer Labels;
     ImRect Rect;
+    ImRect RectClamped;
     bool Hovered;
     bool Held;
 
@@ -354,6 +356,7 @@ struct ImPlot3DLegend {
         PreviousFlags = Flags = ImPlot3DLegendFlags_None;
         Hovered = Held = false;
         PreviousLocation = Location = ImPlot3DLocation_NorthWest;
+        Scroll = ImVec2(0, 0);
     }
 
     void Reset() {
@@ -364,12 +367,14 @@ struct ImPlot3DLegend {
 
 // Holds items
 struct ImPlot3DItemGroup {
+    ImGuiID ID;
     ImPool<ImPlot3DItem> ItemPool;
     ImPlot3DLegend Legend;
     int ColormapIdx;
     ImPlot3DMarker MarkerIdx;
 
     ImPlot3DItemGroup() {
+        ID = 0;
         ColormapIdx = 0;
         MarkerIdx = 0;
     }
@@ -488,6 +493,10 @@ struct ImPlot3DAxis {
     // User input
     bool Hovered;
     bool Held;
+    // Cached colors
+    ImU32 ColorBg;
+    ImU32 ColorHov;
+    ImU32 ColorAct;
 
     // Constructor
     ImPlot3DAxis() {
@@ -515,6 +524,8 @@ struct ImPlot3DAxis {
         // User input
         Hovered = false;
         Held = false;
+        // Cached colors
+        ColorBg = ColorHov = ColorAct = IM_COL32_BLACK_TRANS;
     }
 
     inline void Reset() {

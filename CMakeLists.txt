@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.24)
 
 project(ImApp
   VERSION "0.1.0"
@@ -15,10 +15,10 @@ option(IMAPP_USE_ZLIB "Use ZLIB for image compression. Default value is OFF." OF
 option(IMAPP_BUILD_DEMO "Build demonstration application. Default value is OFF." OFF)
 
 # Get GLFW, to create window for us, etc.
-message(STATUS "Downloading GLFW v3.3.10")
+message(STATUS "Downloading GLFW v3.5.1")
 FetchContent_Declare(glfw
-  GIT_REPOSITORY https://github.com/glfw/glfw
-  GIT_TAG        3.3.10
+  URL https://github.com/glfw/glfw/archive/refs/tags/3.5.1.tar.gz
+  URL_HASH MD5=f76a94bfe5602921913007fe12d38472
 )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
@@ -81,9 +81,9 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
   target_compile_options(ImApp PRIVATE /W4)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Compile options for GCC
-  target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic)
+  target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic -Wno-deprecated-enum-enum-conversion)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Compile options for Clang
-  target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic)
+  target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic -Wno-deprecated-enum-enum-conversion)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel") # Compile options for Intel
   target_compile_options(ImApp PRIVATE -W -Wall -Wextra -Wpedantic)
 endif()

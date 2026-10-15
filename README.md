@@ -21,10 +21,10 @@ those who want to make simple application without the need of high performance
 graphics.
 
 ImApp currently ships with the following libraries:
- * [ImGui](https://github.com/ocornut/imgui) v1.92.6-docking
- * [ImPlot](https://github.com/epezent/implot) 81b8b19 (just after v0.17)
- * [ImPlot3D](https://github.com/brenocq/implot3d) 2c4225b 
- * [GLFW](https://github.com/glfw/glfw) v3.3.10
+ * [ImGui](https://github.com/ocornut/imgui) v1.93.0-docking
+ * [ImPlot](https://github.com/epezent/implot) 851cdbd (bit after v1.0)
+ * [ImPlot3D](https://github.com/brenocq/implot3d) 7913cf1 
+ * [GLFW](https://github.com/glfw/glfw) v3.5.1
  * [stb\_image](https://github.com/nothings/stb) v2.30
  * [stb\_image\_write](https://github.com/nothings/stb) v1.16
  * [FontAwesome](https://github.com/FortAwesome/Font-Awesome) v6.2.0

@@ -1,20 +1,21 @@
 #include <ImApp/imapp.hpp>
 
 class DemoLayer : public ImApp::Layer {
-  public:
-    DemoLayer() {}
+ public:
+  DemoLayer() {}
 
-    void render() {
-      ImGui::ShowDemoWindow();
+  void render() {
+    ImGui::ShowDemoWindow();
 
-      ImPlot::ShowDemoWindow();
+    ImPlot::ShowDemoWindow();
 
-      ImPlot3D::ShowDemoWindow();
-    }
+    ImPlot3D::ShowDemoWindow();
+  }
 };
 
 int main() {
   ImApp::App app(1080, 1080, "ImApp Demo");
+  app.io().IniFilename = nullptr;
   app.push_layer(std::make_unique<DemoLayer>());
   app.run();
 

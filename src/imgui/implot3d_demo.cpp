@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2024-2026 Breno Cunha Queiroz
 
-// ImPlot3D v0.4 WIP
+// ImPlot3D v0.5 WIP
 
 // Acknowledgments:
 //  ImPlot3D is heavily inspired by ImPlot
@@ -28,6 +28,19 @@
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
+
+// Helper to wire demo markers located in code to an interactive browser (e.g. imgui_explorer)
+#if IMGUI_VERSION_NUM >= 19263
+namespace ImGui {
+extern IMGUI_API void DemoMarker(const char* file, int line, const char* section);
+};
+#define IMGUI_DEMO_MARKER(section)                                                                                                                   \
+    do {                                                                                                                                             \
+        ImGui::DemoMarker("implot3d_demo.cpp", __LINE__, section);                                                                                   \
+    } while (0)
+#else
+#define IMGUI_DEMO_MARKER(section)
+#endif
 
 //-----------------------------------------------------------------------------
 // [SECTION] User Namespace
@@ -106,6 +119,7 @@ int MetricFormatter(double value, char* buff, int size, void* data) {
 //-----------------------------------------------------------------------------
 
 void DemoLinePlots() {
+    IMGUI_DEMO_MARKER("Plots/Line Plots");
     static float xs1[1001], ys1[1001], zs1[1001];
     for (int i = 0; i < 1001; i++) {
         xs1[i] = i * 0.001f;
@@ -127,6 +141,7 @@ void DemoLinePlots() {
 }
 
 void DemoScatterPlots() {
+    IMGUI_DEMO_MARKER("Plots/Scatter Plots");
     srand(0);
     static float xs1[100], ys1[100], zs1[100];
     for (int i = 0; i < 100; i++) {
@@ -155,6 +170,7 @@ void DemoScatterPlots() {
 }
 
 void DemoTrianglePlots() {
+    IMGUI_DEMO_MARKER("Plots/Triangle Plots");
     // Pyramid coordinates
     // Apex
     float ax = 0.0f, ay = 0.0f, az = 1.0f;
@@ -240,6 +256,7 @@ void DemoTrianglePlots() {
 }
 
 void DemoQuadPlots() {
+    IMGUI_DEMO_MARKER("Plots/Quad Plots");
     static float xs[6 * 4], ys[6 * 4], zs[6 * 4];
 
     // clang-format off
@@ -320,8 +337,10 @@ void DemoQuadPlots() {
 }
 
 void DemoSurfacePlots() {
+    IMGUI_DEMO_MARKER("Plots/Surface Plots");
     constexpr int N = 20;
     static float xs[N * N], ys[N * N], zs[N * N];
+    static ImU32 custom_colors[N * N];
     static float t = 0.0f;
     t += ImGui::GetIO().DeltaTime;
 
@@ -337,6 +356,9 @@ void DemoSurfacePlots() {
             xs[idx] = min_val + j * step;                                             // X values are constant along rows
             ys[idx] = min_val + i * step;                                             // Y values are constant along columns
             zs[idx] = ImSin(2 * t + ImSqrt((xs[idx] * xs[idx] + ys[idx] * ys[idx]))); // z = sin(2t + sqrt(x^2 + y^2))
+            // Custom per-point color: R=x, G=y, B=z (each remapped from [-1,1] to [0,1])
+            custom_colors[idx] =
+                IM_COL32((ImU8)((xs[idx] + 1) * 0.5f * 255), (ImU8)((ys[idx] + 1) * 0.5f * 255), (ImU8)((zs[idx] + 1) * 0.5f * 255), 255);
         }
     }
 
@@ -362,13 +384,21 @@ void DemoSurfacePlots() {
             ImGui::SameLine();
             ImGui::Combo("##SurfaceColormap", &sel_colormap, colormaps, IM_ARRAYSIZE(colormaps));
         }
+
+        // Custom per-point colors
+        ImGui::RadioButton("Custom Per-Point", &selected_fill, 2);
+        if (selected_fill == 2)
+            ImGui::SameLine(), ImGui::TextDisabled("R=x, G=y, B=z");
+
         ImGui::Unindent();
     }
 
-    // Choose range
+    // Choose range (only applies to Colormap mode)
     static bool custom_range = false;
     static float range_min = -1.0f;
     static float range_max = 1.0f;
+    if (selected_fill != 1)
+        ImGui::BeginDisabled();
     ImGui::Checkbox("Custom range", &custom_range);
     {
         ImGui::Indent();
@@ -382,6 +412,8 @@ void DemoSurfacePlots() {
 
         ImGui::Unindent();
     }
+    if (selected_fill != 1)
+        ImGui::EndDisabled();
 
     // Select flags
     static ImPlot3DSurfaceFlags flags = ImPlot3DSurfaceFlags_NoMarkers;
@@ -402,6 +434,8 @@ void DemoSurfacePlots() {
         spec.LineColor = ImPlot3D::GetColormapColor(1);
         if (selected_fill == 0)
             spec.FillColor = solid_color;
+        else if (selected_fill == 2)
+            spec.FillColors = custom_colors;
 
         // Plot the surface
         if (custom_range)
@@ -417,6 +451,7 @@ void DemoSurfacePlots() {
 }
 
 void DemoMeshPlots() {
+    IMGUI_DEMO_MARKER("Plots/Mesh Plots");
     static int mesh_id = 0;
     ImGui::Combo("Mesh", &mesh_id, "Duck\0Sphere\0Cube\0\0");
 
@@ -443,6 +478,7 @@ void DemoMeshPlots() {
 
         ImPlot3DSpec spec;
         spec.Flags = flags;
+        spec.Stride = (int)sizeof(ImPlot3DPoint);
         // Set fill style
         spec.FillColor = fill_color;
         // Set line style
@@ -455,17 +491,18 @@ void DemoMeshPlots() {
 
         // Plot mesh
         if (mesh_id == 0)
-            ImPlot3D::PlotMesh("Duck", duck_vtx, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT, spec);
+            ImPlot3D::PlotMesh("Duck", &duck_vtx[0].x, &duck_vtx[0].y, &duck_vtx[0].z, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT, spec);
         else if (mesh_id == 1)
-            ImPlot3D::PlotMesh("Sphere", sphere_vtx, sphere_idx, SPHERE_VTX_COUNT, SPHERE_IDX_COUNT, spec);
+            ImPlot3D::PlotMesh("Sphere", &sphere_vtx[0].x, &sphere_vtx[0].y, &sphere_vtx[0].z, sphere_idx, SPHERE_VTX_COUNT, SPHERE_IDX_COUNT, spec);
         else if (mesh_id == 2)
-            ImPlot3D::PlotMesh("Cube", cube_vtx, cube_idx, CUBE_VTX_COUNT, CUBE_IDX_COUNT, spec);
+            ImPlot3D::PlotMesh("Cube", &cube_vtx[0].x, &cube_vtx[0].y, &cube_vtx[0].z, cube_idx, CUBE_VTX_COUNT, CUBE_IDX_COUNT, spec);
 
         ImPlot3D::EndPlot();
     }
 }
 
 void DemoImagePlots() {
+    IMGUI_DEMO_MARKER("Plots/Image Plots");
     ImGui::BulletText("Below we are displaying the font texture, which is the only texture we have\naccess to in this demo.");
     ImGui::BulletText("Use the 'ImTextureID' type as storage to pass pointers or identifiers to your\nown texture data.");
     ImGui::BulletText("See ImGui Wiki page 'Image Loading and Displaying Examples'.");
@@ -556,6 +593,7 @@ void DemoImagePlots() {
 }
 
 void DemoRealtimePlots() {
+    IMGUI_DEMO_MARKER("Plots/Realtime Plots");
     ImGui::BulletText("Move your mouse to change the data!");
     static ScrollingBuffer sdata1, sdata2, sdata3;
     static ImPlot3DAxisFlags flags = ImPlot3DAxisFlags_NoTickLabels;
@@ -589,6 +627,7 @@ void DemoRealtimePlots() {
 }
 
 void DemoPlotFlags() {
+    IMGUI_DEMO_MARKER("Plots/Plot Flags");
     static ImPlot3DFlags flags = ImPlot3DFlags_None;
 
     CHECKBOX_FLAG(flags, ImPlot3DFlags_NoTitle);
@@ -691,6 +730,7 @@ void DemoPlotFlags() {
 }
 
 void DemoOffsetAndStride() {
+    IMGUI_DEMO_MARKER("Plots/Offset and Stride");
     static const int k_spirals = 11;
     static const int k_points_per = 50;
     static const int k_size = 3 * k_points_per * k_spirals;
@@ -728,6 +768,7 @@ void DemoOffsetAndStride() {
 }
 
 void DemoLegendOptions() {
+    IMGUI_DEMO_MARKER("Plots/Legend Options");
     static ImPlot3DLocation loc = ImPlot3DLocation_East;
     ImGui::CheckboxFlags("North", (unsigned int*)&loc, ImPlot3DLocation_North);
     ImGui::SameLine();
@@ -764,6 +805,9 @@ void DemoLegendOptions() {
     ImGui::SliderFloat2("LegendInnerPadding", (float*)&ImPlot3D::GetStyle().LegendInnerPadding, 0.0f, 10.0f, "%.0f");
     ImGui::SliderFloat2("LegendSpacing", (float*)&ImPlot3D::GetStyle().LegendSpacing, 0.0f, 5.0f, "%.0f");
 
+    static int num_dummy_items = 25;
+    ImGui::SliderInt("Num Dummy Items (Demo Scrolling)", &num_dummy_items, 0, 100);
+
     if (ImPlot3D::BeginPlot("Legend Options Demo", ImVec2(-1, 0))) {
         ImPlot3D::SetupAxes("X-Axis", "Y-Axis", "Z-Axis");
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1);
@@ -797,11 +841,19 @@ void DemoLegendOptions() {
         ImPlot3D::PlotLine("Helix B##IDText", xs2, ys2, zs2, count); // Text after ## used for ID only
         ImPlot3D::PlotLine("##NotListed", xs3, ys3, zs3, count);     // Plotted, but not added to legend
 
+        // Add dummy items to demonstrate legend scrolling (scroll the mouse wheel over the legend)
+        for (int i = 0; i < num_dummy_items; ++i) {
+            char label[32];
+            snprintf(label, sizeof(label), "Item %03d", i);
+            ImPlot3D::PlotDummy(label);
+        }
+
         ImPlot3D::EndPlot();
     }
 }
 
 void DemoMarkersAndText() {
+    IMGUI_DEMO_MARKER("Plots/Markers and Text");
     static float mk_size = ImPlot3D::GetStyle().MarkerSize;
     static float mk_weight = ImPlot3D::GetStyle().LineWeight;
     ImGui::DragFloat("Marker Size", &mk_size, 0.1f, 2.0f, 10.0f, "%.2f px");
@@ -861,6 +913,7 @@ void DemoMarkersAndText() {
 }
 
 void DemoNaNValues() {
+    IMGUI_DEMO_MARKER("Plots/NaN Values");
     static bool include_nan = true;
     static ImPlot3DLineFlags flags = 0;
 
@@ -881,11 +934,221 @@ void DemoNaNValues() {
     }
 }
 
+void Demo_PerIndexColors() {
+    IMGUI_DEMO_MARKER("Plots/Per-Index Colors");
+
+    // Colorful Lines
+    static float xs1[1001], ys1[1001], zs1[1001];
+    static ImU32 colors1[1001];
+    for (int i = 0; i < 1001; ++i) {
+        xs1[i] = i * 0.001f;
+        ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+        zs1[i] = 0.5f + 0.5f * cosf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+        // Rainbow colors
+        float hue = (float)i / 1000.0f;
+        colors1[i] = ImColor::HSV(hue, 0.8f, 0.9f);
+    }
+    static float xs2[20], ys2[20], zs2[20];
+    static ImU32 colors2[20];
+    for (int i = 0; i < 20; ++i) {
+        xs2[i] = i * 1 / 19.0f;
+        ys2[i] = xs2[i] * xs2[i];
+        zs2[i] = xs2[i] * ys2[i];
+        // Colormap colors (Viridis)
+        float t = i / 19.0f;
+        ImVec4 color = ImPlot3D::SampleColormap(t, ImPlot3DColormap_Viridis);
+        colors2[i] = ImGui::GetColorU32(color);
+    }
+    if (ImPlot3D::BeginPlot("Colorful Lines")) {
+        ImPlot3D::PlotLine("f(x)", xs1, ys1, zs1, 1001, {ImPlot3DProp_LineColors, colors1});
+        ImPlot3D::PlotLine("g(x)", xs2, ys2, zs2, 20,
+                           {ImPlot3DProp_Marker, ImPlot3DMarker_Circle, ImPlot3DProp_Flags, (int)ImPlot3DLineFlags_Segments, ImPlot3DProp_LineColors,
+                            colors2, ImPlot3DProp_MarkerFillColors, colors2, ImPlot3DProp_MarkerLineColors, colors2});
+        ImPlot3D::EndPlot();
+    }
+
+    // Colorful Scatter
+    srand(0);
+    static float xs_scatter1[100], ys_scatter1[100], zs_scatter1[100];
+    static ImU32 colors_scatter1_fill[100], colors_scatter1_line[100];
+    static float sizes_scatter1[100];
+    for (int i = 0; i < 100; ++i) {
+        xs_scatter1[i] = i * 0.01f;
+        ys_scatter1[i] = xs_scatter1[i] + 0.1f * ((float)rand() / (float)RAND_MAX);
+        zs_scatter1[i] = xs_scatter1[i] + 0.1f * ((float)rand() / (float)RAND_MAX);
+        // Rainbow hue colors
+        float hue = i / 99.0f;
+        colors_scatter1_fill[i] = ImColor::HSV(hue, 0.8f, 0.9f);
+        colors_scatter1_line[i] = ImColor::HSV(hue, 0.9f, 0.7f);
+        // Random sizes between 2 and 6
+        sizes_scatter1[i] = 2.0f + 4.0f * ((float)rand() / (float)RAND_MAX);
+    }
+    static float xs_scatter2[50], ys_scatter2[50], zs_scatter2[50];
+    static ImU32 colors_scatter2[50];
+    static float sizes_scatter2[50];
+    for (int i = 0; i < 50; ++i) {
+        xs_scatter2[i] = 0.25f + 0.2f * ((float)rand() / (float)RAND_MAX);
+        ys_scatter2[i] = 0.50f + 0.2f * ((float)rand() / (float)RAND_MAX);
+        zs_scatter2[i] = 0.75f + 0.2f * ((float)rand() / (float)RAND_MAX);
+        // Colormap colors (Viridis)
+        float t = i / 49.0f;
+        ImVec4 color = ImPlot3D::SampleColormap(t, ImPlot3DColormap_Viridis);
+        colors_scatter2[i] = ImGui::GetColorU32(color);
+        // Random sizes between 2 and 6
+        sizes_scatter2[i] = 2.0f + 4.0f * ((float)rand() / (float)RAND_MAX);
+    }
+
+    if (ImPlot3D::BeginPlot("Colorful Scatter")) {
+        ImPlot3D::PlotScatter("Data 1", xs_scatter1, ys_scatter1, zs_scatter1, 100,
+                              {ImPlot3DProp_MarkerFillColors, colors_scatter1_fill, ImPlot3DProp_MarkerLineColors, colors_scatter1_line,
+                               ImPlot3DProp_MarkerSizes, sizes_scatter1});
+        ImPlot3D::PlotScatter("Data 2", xs_scatter2, ys_scatter2, zs_scatter2, 50,
+                              {ImPlot3DProp_Marker, ImPlot3DMarker_Square, ImPlot3DProp_MarkerFillColors, colors_scatter2,
+                               ImPlot3DProp_MarkerLineColors, colors_scatter2, ImPlot3DProp_MarkerSizes, sizes_scatter2, ImPlot3DProp_FillAlpha,
+                               0.5f});
+        ImPlot3D::EndPlot();
+    }
+
+    // Colorful Triangles (pyramid with per-vertex fill colors)
+    static float xs_tri[18], ys_tri[18], zs_tri[18];
+    static ImU32 colors_tri[18];
+    {
+        // Apex
+        float ax = 0.0f, ay = 0.0f, az = 1.0f;
+        // Square base corners
+        float cx[4] = {-0.5f, 0.5f, 0.5f, -0.5f};
+        float cy[4] = {-0.5f, -0.5f, 0.5f, 0.5f};
+        float cz[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        int v = 0;
+        auto AddVertex = [&](float x, float y, float z) {
+            xs_tri[v] = x;
+            ys_tri[v] = y;
+            zs_tri[v] = z;
+            v++;
+        };
+        AddVertex(ax, ay, az);
+        AddVertex(cx[0], cy[0], cz[0]);
+        AddVertex(cx[1], cy[1], cz[1]);
+        AddVertex(ax, ay, az);
+        AddVertex(cx[1], cy[1], cz[1]);
+        AddVertex(cx[2], cy[2], cz[2]);
+        AddVertex(ax, ay, az);
+        AddVertex(cx[2], cy[2], cz[2]);
+        AddVertex(cx[3], cy[3], cz[3]);
+        AddVertex(ax, ay, az);
+        AddVertex(cx[3], cy[3], cz[3]);
+        AddVertex(cx[0], cy[0], cz[0]);
+        AddVertex(cx[0], cy[0], cz[0]);
+        AddVertex(cx[1], cy[1], cz[1]);
+        AddVertex(cx[2], cy[2], cz[2]);
+        AddVertex(cx[0], cy[0], cz[0]);
+        AddVertex(cx[2], cy[2], cz[2]);
+        AddVertex(cx[3], cy[3], cz[3]);
+        // Hot colormap sampled by z: bottom (z=0) is cold, apex (z=1) is hot
+        for (int i = 0; i < 18; ++i) {
+            ImVec4 color = ImPlot3D::SampleColormap(0.5f * zs_tri[i], ImPlot3DColormap_Hot);
+            colors_tri[i] = ImGui::GetColorU32(color);
+        }
+    }
+    if (ImPlot3D::BeginPlot("Colorful Triangles")) {
+        ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -0.5, 1.5);
+        ImPlot3D::PlotTriangle("Pyramid", xs_tri, ys_tri, zs_tri, 18, {ImPlot3DProp_FillColors, colors_tri, ImPlot3DProp_FillAlpha, 0.8f});
+        ImPlot3D::EndPlot();
+    }
+
+    // Colorful Quads (cube [0,1]^3 with per-vertex RGB colors: R=x, G=y, B=z)
+    static float xs_quad[24], ys_quad[24], zs_quad[24];
+    static ImU32 colors_quad[24];
+    {
+        // clang-format off
+        xs_quad[0]=1; ys_quad[0]=0; zs_quad[0]=0;  xs_quad[1]=1; ys_quad[1]=1; zs_quad[1]=0;  xs_quad[2]=1; ys_quad[2]=1; zs_quad[2]=1;  xs_quad[3]=1; ys_quad[3]=0; zs_quad[3]=1;
+        xs_quad[4]=0; ys_quad[4]=0; zs_quad[4]=0;  xs_quad[5]=0; ys_quad[5]=1; zs_quad[5]=0;  xs_quad[6]=0; ys_quad[6]=1; zs_quad[6]=1;  xs_quad[7]=0; ys_quad[7]=0; zs_quad[7]=1;
+        xs_quad[8]=0; ys_quad[8]=1; zs_quad[8]=0;  xs_quad[9]=1; ys_quad[9]=1; zs_quad[9]=0;  xs_quad[10]=1; ys_quad[10]=1; zs_quad[10]=1;  xs_quad[11]=0; ys_quad[11]=1; zs_quad[11]=1;
+        xs_quad[12]=0; ys_quad[12]=0; zs_quad[12]=0;  xs_quad[13]=1; ys_quad[13]=0; zs_quad[13]=0;  xs_quad[14]=1; ys_quad[14]=0; zs_quad[14]=1;  xs_quad[15]=0; ys_quad[15]=0; zs_quad[15]=1;
+        xs_quad[16]=0; ys_quad[16]=0; zs_quad[16]=1;  xs_quad[17]=1; ys_quad[17]=0; zs_quad[17]=1;  xs_quad[18]=1; ys_quad[18]=1; zs_quad[18]=1;  xs_quad[19]=0; ys_quad[19]=1; zs_quad[19]=1;
+        xs_quad[20]=0; ys_quad[20]=0; zs_quad[20]=0;  xs_quad[21]=1; ys_quad[21]=0; zs_quad[21]=0;  xs_quad[22]=1; ys_quad[22]=1; zs_quad[22]=0;  xs_quad[23]=0; ys_quad[23]=1; zs_quad[23]=0;
+        // clang-format on
+        // Color = (R=x, G=y, B=z) per vertex
+        for (int i = 0; i < 24; ++i)
+            colors_quad[i] = IM_COL32((ImU8)(xs_quad[i] * 255), (ImU8)(ys_quad[i] * 255), (ImU8)(zs_quad[i] * 255), 255);
+    }
+    if (ImPlot3D::BeginPlot("Colorful Quads")) {
+        ImPlot3D::SetupAxesLimits(-0.5, 1.5, -0.5, 1.5, -0.5, 1.5);
+        ImPlot3D::PlotQuad("Cube", xs_quad, ys_quad, zs_quad, 24, {ImPlot3DProp_FillColors, colors_quad, ImPlot3DProp_FillAlpha, 0.8f});
+        ImPlot3D::EndPlot();
+    }
+
+    // Gouraud-shaded Duck (yellow duck lit by a point light with ambient)
+    // Per-vertex normals are computed once, then mapped to index-buffer slots so the GPU
+    // interpolates colors across each triangle (Gouraud shading).
+    static ImU32 duck_fill_colors[DUCK_IDX_COUNT];
+    static bool duck_colors_built = false;
+    if (!duck_colors_built) {
+        // Accumulate area-weighted face normals into each vertex
+        struct Vec3 {
+            float x, y, z;
+        };
+        auto sub3 = [](Vec3 a, Vec3 b) -> Vec3 { return {a.x - b.x, a.y - b.y, a.z - b.z}; };
+        auto add3 = [](Vec3 a, Vec3 b) -> Vec3 { return {a.x + b.x, a.y + b.y, a.z + b.z}; };
+        auto cross3 = [](Vec3 a, Vec3 b) -> Vec3 { return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x}; };
+        auto dot3 = [](Vec3 a, Vec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; };
+        auto norm3 = [&dot3](Vec3 a) -> Vec3 {
+            float len = sqrtf(dot3(a, a));
+            return len > 1e-8f ? Vec3{a.x / len, a.y / len, a.z / len} : Vec3{0, 0, 1};
+        };
+
+        Vec3 vtx_normals[DUCK_VTX_COUNT] = {};
+        for (int i = 0; i < DUCK_IDX_COUNT; i += 3) {
+            unsigned int i0 = duck_idx[i], i1 = duck_idx[i + 1], i2 = duck_idx[i + 2];
+            Vec3 p0 = {(float)duck_vtx[i0].x, (float)duck_vtx[i0].y, (float)duck_vtx[i0].z};
+            Vec3 p1 = {(float)duck_vtx[i1].x, (float)duck_vtx[i1].y, (float)duck_vtx[i1].z};
+            Vec3 p2 = {(float)duck_vtx[i2].x, (float)duck_vtx[i2].y, (float)duck_vtx[i2].z};
+            Vec3 fn = cross3(sub3(p1, p0), sub3(p2, p0)); // area-weighted face normal
+            vtx_normals[i0] = add3(vtx_normals[i0], fn);
+            vtx_normals[i1] = add3(vtx_normals[i1], fn);
+            vtx_normals[i2] = add3(vtx_normals[i2], fn);
+        }
+        for (int v = 0; v < DUCK_VTX_COUNT; v++)
+            vtx_normals[v] = norm3(vtx_normals[v]);
+
+        // Lighting: yellow duck, warm point light, soft ambient
+        Vec3 light_pos = {2.0f, 2.0f, 3.0f};
+        Vec3 duck_col = {1.0f, 0.85f, 0.1f};  // yellow
+        Vec3 light_col = {1.0f, 0.95f, 0.8f}; // warm white
+        Vec3 ambient = {0.15f, 0.12f, 0.03f}; // dim warm ambient
+
+        ImU32 vtx_colors[DUCK_VTX_COUNT];
+        for (int v = 0; v < DUCK_VTX_COUNT; v++) {
+            Vec3 pos = {(float)duck_vtx[v].x, (float)duck_vtx[v].y, (float)duck_vtx[v].z};
+            Vec3 to_light = norm3(sub3(light_pos, pos));
+            float diff = ImMax(0.0f, dot3(vtx_normals[v], to_light));
+            float r = ImMin(1.0f, ambient.x + duck_col.x * light_col.x * diff);
+            float g = ImMin(1.0f, ambient.y + duck_col.y * light_col.y * diff);
+            float b = ImMin(1.0f, ambient.z + duck_col.z * light_col.z * diff);
+            vtx_colors[v] = IM_COL32((ImU8)(r * 255), (ImU8)(g * 255), (ImU8)(b * 255), 255);
+        }
+
+        // Map per-vertex colors to index-buffer slots for Gouraud interpolation
+        for (int i = 0; i < DUCK_IDX_COUNT; i++)
+            duck_fill_colors[i] = vtx_colors[duck_idx[i]];
+
+        duck_colors_built = true;
+    }
+    if (ImPlot3D::BeginPlot("Gouraud Duck")) {
+        ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1);
+        ImPlot3D::PlotMesh("Duck", &duck_vtx[0].x, &duck_vtx[0].y, &duck_vtx[0].z, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT,
+                           {ImPlot3DProp_Stride, (int)sizeof(ImPlot3DPoint), ImPlot3DProp_FillColors, duck_fill_colors, ImPlot3DProp_Flags,
+                            (int)ImPlot3DMeshFlags_NoLines});
+        ImPlot3D::EndPlot();
+    }
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Axes
 //-----------------------------------------------------------------------------
 
 void DemoBoxScale() {
+    IMGUI_DEMO_MARKER("Axes/Box Scale");
     constexpr int N = 100;
     float xs[N], ys[N], zs[N];
     for (int i = 0; i < N; i++) {
@@ -906,6 +1169,7 @@ void DemoBoxScale() {
 }
 
 void DemoBoxRotation() {
+    IMGUI_DEMO_MARKER("Axes/Box Rotation");
     double origin[2] = {0.0, 0.0};
     double axis[2] = {0.0, 1.0};
 
@@ -949,6 +1213,7 @@ void DemoBoxRotation() {
 }
 
 void Demo_LogScale() {
+    IMGUI_DEMO_MARKER("Axes/Log Scale");
     static double xs[1001], ys1[1001], ys2[1001], ys3[1001], zs[1001];
     for (int i = 0; i < 1001; i++) {
         xs[i] = i * 0.1;
@@ -970,6 +1235,7 @@ void Demo_LogScale() {
 }
 
 void Demo_SymmetricLogScale() {
+    IMGUI_DEMO_MARKER("Axes/Symmetric Log Scale");
     static double xs[1001], ys1[1001], ys2[1001], zs[1001];
     for (int i = 0; i < 1001; i++) {
         xs[i] = i * 0.1f - 50;
@@ -986,6 +1252,7 @@ void Demo_SymmetricLogScale() {
 }
 
 void DemoTickLabels() {
+    IMGUI_DEMO_MARKER("Axes/Tick Labels");
     static bool custom_fmt = true;
     static bool custom_ticks = false;
     static bool custom_labels = true;
@@ -1016,6 +1283,7 @@ void DemoTickLabels() {
 }
 
 void DemoAxisConstraints() {
+    IMGUI_DEMO_MARKER("Axes/Axis Constraints");
     static float limit_constraints[2] = {-10, 10};
     static float zoom_constraints[2] = {1, 20};
     static ImPlot3DAxisFlags flags;
@@ -1036,6 +1304,7 @@ void DemoAxisConstraints() {
 }
 
 void DemoEqualAxes() {
+    IMGUI_DEMO_MARKER("Axes/Equal Axes");
     ImGui::BulletText("Equal constraint applies to all three axes (X, Y, Z)");
     ImGui::BulletText("When enabled, the axes maintain the same units/pixel ratio");
 
@@ -1073,6 +1342,7 @@ void DemoEqualAxes() {
 }
 
 void DemoAutoFittingData() {
+    IMGUI_DEMO_MARKER("Axes/Auto-Fitting Data");
     ImGui::BulletText("Axes can be configured to auto-fit to data extents.");
     ImGui::BulletText("Try panning and zooming to see the axes adjust.");
     ImGui::BulletText("Disable AutoFit on an axis to fix its range.");
@@ -1117,6 +1387,7 @@ void DemoAutoFittingData() {
 //-----------------------------------------------------------------------------
 
 void DemoMousePicking() {
+    IMGUI_DEMO_MARKER("Tools/Mouse Picking");
     static ImVector<ImPlot3DPoint> points;
     static ImVector<ImPlot3DRay> rays;
 
@@ -1199,6 +1470,7 @@ void DemoMousePicking() {
 //-----------------------------------------------------------------------------
 
 void DemoCustomStyles() {
+    IMGUI_DEMO_MARKER("Custom/Custom Styles");
     ImPlot3D::PushColormap(ImPlot3DColormap_Deep);
     // normally you wouldn't change the entire style each frame
     ImPlot3DStyle backup = ImPlot3D::GetStyle();
@@ -1221,6 +1493,7 @@ void DemoCustomStyles() {
 }
 
 void DemoCustomRendering() {
+    IMGUI_DEMO_MARKER("Custom/Custom Rendering");
     if (ImPlot3D::BeginPlot("##CustomRend")) {
         ImPlot3D::SetupAxesLimits(-0.1, 1.1, -0.1, 1.1, -0.1, 1.1);
 
@@ -1248,6 +1521,7 @@ void DemoCustomRendering() {
 }
 
 void DemoCustomOverlay() {
+    IMGUI_DEMO_MARKER("Custom/Custom Overlay");
     ImGui::BulletText("Demonstrates custom 2D overlays using GetPlotRectPos/GetPlotRectSize.");
     ImGui::BulletText("Shows mouse tooltip, line to closest point, and orientation gizmo.");
 
@@ -1364,6 +1638,7 @@ void DemoCustomOverlay() {
 }
 
 void DemoCustomPerPointStyle() {
+    IMGUI_DEMO_MARKER("Custom/Custom Per-Point Style");
     ImGui::BulletText("Demonstrates per-point coloring using colormap sampling.");
     ImGui::BulletText("A different color is sampled for each point.");
     ImGui::BulletText("All points share the same label for a single legend entry.");
@@ -1435,6 +1710,18 @@ void DemoCustomPerPointStyle() {
         initialized = true;
     }
 
+    // Precompute per-point colors and flat XYZ arrays for each torus
+    static float xs[3][400], ys[3][400], zs[3][400];
+    ImU32 point_colors[3][400];
+    for (int torus = 0; torus < 3; torus++) {
+        for (int i = 0; i < 400; i++) {
+            xs[torus][i] = torus_data[torus][i][0];
+            ys[torus][i] = torus_data[torus][i][1];
+            zs[torus][i] = torus_data[torus][i][2];
+            point_colors[torus][i] = ImGui::ColorConvertFloat4ToU32(ImPlot3D::SampleColormap(torus_data[torus][i][3], cmap));
+        }
+    }
+
     if (ImPlot3D::BeginPlot("##PerPointStyle", ImVec2(-1, 0))) {
         ImPlot3D::SetupAxes("X", "Y", "Z");
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -0.5, 1.5);
@@ -1451,21 +1738,14 @@ void DemoCustomPerPointStyle() {
         spec.MarkerSize = marker_size;
 
         for (int torus = 0; torus < 3; torus++) {
-            const int point_count = 400;
-            for (int i = 0; i < point_count; i++) {
-                float x = torus_data[torus][i][0];
-                float y = torus_data[torus][i][1];
-                float z = torus_data[torus][i][2];
-                float t = torus_data[torus][i][3];
-
-                // Sample colormap and set marker style
-                ImVec4 color = ImPlot3D::SampleColormap(t, cmap);
-                spec.FillColor = color;
-                spec.LineColor = color;
-                ImPlot3D::PlotScatter(labels[torus], &x, &y, &z, 1, spec);
-            }
+            spec.MarkerFillColors = point_colors[torus];
+            spec.MarkerLineColors = point_colors[torus];
+            ImPlot3D::PlotScatter(labels[torus], xs[torus], ys[torus], zs[torus], 400, spec);
             // Override legend color with PlotDummy
-            spec.LineColor = legend_colors[torus];
+            spec.MarkerFillColors = nullptr;
+            spec.MarkerLineColors = nullptr;
+            spec.MarkerFillColor = legend_colors[torus];
+            spec.MarkerLineColor = legend_colors[torus];
             ImPlot3D::PlotDummy(labels[torus], spec);
         }
 
@@ -1478,6 +1758,7 @@ void DemoCustomPerPointStyle() {
 //-----------------------------------------------------------------------------
 
 void DemoConfig() {
+    IMGUI_DEMO_MARKER("Config");
     ImGui::ShowFontSelector("Font");
     ImGui::ShowStyleSelector("ImGui Style");
     ImPlot3D::ShowStyleSelector("ImPlot3D Style");
@@ -1518,6 +1799,7 @@ void DemoConfig() {
 //-----------------------------------------------------------------------------
 
 void DemoHelp() {
+    IMGUI_DEMO_MARKER("Help");
     ImGui::SeparatorText("ABOUT THIS DEMO:");
     ImGui::BulletText("The other tabs are demonstrating many aspects of the library.");
 
@@ -1609,6 +1891,7 @@ void ShowAllDemos() {
             DemoHeader("Legend Options", DemoLegendOptions);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);
+            DemoHeader("Per-Index Colors", Demo_PerIndexColors);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Axes")) {
@@ -1817,7 +2100,8 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
             ImGui::Checkbox("Only Modified Colors", &output_only_modified);
 
             static ImGuiTextFilter filter;
-            filter.Draw("Filter colors", ImGui::GetFontSize() * 16);
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16);
+            filter.Draw("Filter colors");
 
             static ImGuiColorEditFlags alpha_flags = ImGuiColorEditFlags_AlphaPreviewHalf;
 #if IMGUI_VERSION_NUM < 19173

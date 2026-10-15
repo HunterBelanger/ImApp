@@ -36,6 +36,7 @@
 #include <ImApp/IconsFontAwesome6.h>
 #include <ImApp/IconsFontAwesome6Brands.h>
 #include <ImApp/imgui.h>
+#include <ImApp/imgui_internal.h>  // For DockBuilder API
 #include <ImApp/implot.h>
 #include <ImApp/implot3d.h>
 
